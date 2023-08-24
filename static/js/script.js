@@ -16,15 +16,15 @@ const loadDataFromLocalstorage = () => {
 
     const defaultText = `<div class="default-text">
                             <h1>Multi-Label Media Article Classification</h1>
-                            <p>Data driven system to categorize printed media articles into multiple relevant topics<br> Your chat history will be displayed here.</p>
+                            <p>Data-driven system to categorize printed media articles into multiple relevant topics<br> Your chat history will be displayed here.</p>
                         </div>`
 
     chatContainer.innerHTML = localStorage.getItem("all-chats") || defaultText;
-    chatContainer.scrollTo(0, chatContainer.scrollHeight); // Scroll to bottom of the chat container
+    chatContainer.scrollTo(0, chatContainer.scrollHeight); // Scroll to the bottom of the chat container
 }
 
 const createChatElement = (content, className) => {
-    // Create new div and apply chat, specified class and set html content of div
+    // Create a new div and apply chat, specified class, and set HTML content of div
     const chatDiv = document.createElement("div");
     chatDiv.classList.add("chat", className);
     chatDiv.innerHTML = content;
@@ -52,16 +52,28 @@ const getChatResponse = async (incomingChatDiv) => {
         })
     }
 
-    // Send POST request to API, get response and set the reponse as paragraph element text
+    // Send POST request to API and handle response
     try {
-        const response = await (await fetch(API_URL, requestOptions)).json();
-        pElement.textContent = response.choices[0].text.trim();
-    } catch (error) { // Add error class to the paragraph element and set error text
+        const response = await fetch(API_URL, requestOptions);
+        
+        if (!response.ok) {
+            throw new Error(`API request failed with status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        
+        if (responseData.choices && responseData.choices.length > 0) {
+            pElement.textContent = responseData.choices[0].text.trim();
+        } else {
+            throw new Error("API response is missing expected data.");
+        }
+    } catch (error) {
+        console.error("API Error:", error); // Log the error to the console for debugging
         pElement.classList.add("error");
         pElement.textContent = "Oops! Something went wrong while retrieving the response. Please try again.";
     }
 
-    // Remove the typing animation, append the paragraph element and save the chats to local storage
+    // Remove the typing animation, append the paragraph element, and save the chats to local storage
     incomingChatDiv.querySelector(".typing-animation").remove();
     incomingChatDiv.querySelector(".chat-details").appendChild(pElement);
     localStorage.setItem("all-chats", chatContainer.innerHTML);
@@ -70,8 +82,8 @@ const getChatResponse = async (incomingChatDiv) => {
 
 const copyResponse = (copyBtn) => {
     // Copy the text content of the response to the clipboard
-    const reponseTextElement = copyBtn.parentElement.querySelector("p");
-    navigator.clipboard.writeText(reponseTextElement.textContent);
+    const responseTextElement = copyBtn.parentElement.querySelector("p");
+    navigator.clipboard.writeText(responseTextElement.textContent);
     copyBtn.textContent = "done";
     setTimeout(() => copyBtn.textContent = "content_copy", 1000);
 }
@@ -98,7 +110,7 @@ const showTypingAnimation = () => {
 
 const handleOutgoingChat = () => {
     userText = chatInput.value.trim(); // Get chatInput value and remove extra spaces
-    if(!userText) return; // If chatInput is empty return from here
+    if(!userText) return; // If chatInput is empty, return from here
 
     // Clear the input field and reset its height
     chatInput.value = "";
@@ -111,7 +123,7 @@ const handleOutgoingChat = () => {
                     </div>
                 </div>`;
 
-    // Create an outgoing chat div with user's message and append it to chat container
+    // Create an outgoing chat div with the user's message and append it to chat container
     const outgoingChatDiv = createChatElement(html, "outgoing");
     chatContainer.querySelector(".default-text")?.remove();
     chatContainer.appendChild(outgoingChatDiv);
@@ -128,7 +140,7 @@ deleteButton.addEventListener("click", () => {
 });
 
 themeButton.addEventListener("click", () => {
-    // Toggle body's class for the theme mode and save the updated theme to the local storage 
+    // Toggle body's class for the theme mode and save the updated theme to local storage 
     document.body.classList.toggle("light-mode");
     localStorage.setItem("themeColor", themeButton.innerText);
     themeButton.innerText = document.body.classList.contains("light-mode") ? "dark_mode" : "light_mode";
